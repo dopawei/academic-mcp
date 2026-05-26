@@ -1,0 +1,30 @@
+[project]
+name = "academic-mcp"
+version = "0.3.0"
+description = "Unified academic MCP server for DeepXiv, CNKI, and Web of Science"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Wei Zhang" }
+]
+dependencies = [
+    "deepxiv-sdk>=0.2.5",
+    "fastmcp>=2.0.0",
+    "playwright>=1.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+academic-mcp = "academic_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = ["academic_mcp/"]
