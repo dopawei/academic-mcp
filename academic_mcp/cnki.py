@@ -290,6 +290,8 @@ def register_cnki_tools(mcp: FastMCP):
         finally:
             await page.close()
 
+    globals()["get_paper_detail_impl"] = get_paper_detail
+
     @mcp.tool()
     async def download_paper(url: str, save_dir: str = "", ctx: Context = None) -> str:
         """
@@ -350,6 +352,8 @@ def register_cnki_tools(mcp: FastMCP):
 
         finally:
             await page.close()
+
+    globals()["download_paper_impl"] = download_paper
 
     @mcp.tool()
     async def login_cnki(ctx: Context = None) -> str:
