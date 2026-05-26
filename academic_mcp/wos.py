@@ -649,45 +649,52 @@ def register_wos_tools(mcp: FastMCP):
         pool = _get_pool(ctx)
         await pool.restart(headless=False)
         page = await pool.new_page()
+        keep_session_open = False
 
         try:
-            await page.goto(WOS_BASE, wait_until="domcontentloaded", timeout=30000)
+            await page.goto(WOS_ADVANCED_SEARCH, wait_until="domcontentloaded", timeout=30000)
             await delay(3, 5)
             await _dismiss_cookie_banner(page)
 
             current_url = page.url
 
-            # 已经在 WoS 页面 = 已认证
-            if "webofscience" in current_url.lower() and "login" not in current_url.lower():
+            # Authenticate against the real advanced-search route. Some proxy
+            # front pages load while the target route still redirects to CAS.
+            if "webofscience" in current_url.lower() and "login" not in current_url.lower() and "authserver" not in current_url.lower():
+                keep_session_open = True
                 return json.dumps({
                     "status": "already_authenticated",
-                    "message": "已通过代理认证，可以正常使用 WoS",
+                    "message": "WoS proxy authentication is active in the current MCP process. Keep this browser window open while using WoS tools.",
                     "url": current_url,
                 }, ensure_ascii=False)
 
             # 被重定向到登录页 — 等待用户登录
             try:
                 await page.wait_for_url(
-                    lambda u: "webofscience" in u.lower() and "login" not in u.lower(),
+                    lambda u: "webofscience" in u.lower() and "login" not in u.lower() and "authserver" not in u.lower(),
                     timeout=300000,
                 )
+                keep_session_open = True
                 return json.dumps({
                     "status": "login_success",
-                    "message": "登录成功！代理认证态已保存。",
+                    "message": "WoS login succeeded. Keep this browser window open while using WoS tools in the current MCP process.",
+                    "url": page.url,
                 }, ensure_ascii=False)
             except Exception:
+                keep_session_open = True
                 return json.dumps({
                     "status": "waiting_for_login",
-                    "message": "浏览器已打开。请完成大学代理认证，登录态会自动保存。",
+                    "message": "WoS login page is open. Complete SZU proxy authentication, then retry search in the same MCP process.",
+                    "url": page.url,
                 }, ensure_ascii=False)
 
         except Exception as e:
             return json.dumps({"error": f"打开 WoS 失败: {e}"}, ensure_ascii=False)
 
         finally:
-            await page.close()
-            # 恢复 headless 模式，后续搜索不需要可见窗口
-            await pool.restart(headless=True)
+            if not keep_session_open:
+                await page.close()
+                await pool.restart(headless=True)
 
     globals()["login_wos_impl"] = login_wos
 
