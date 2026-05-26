@@ -496,6 +496,8 @@ def register_wos_tools(mcp: FastMCP):
         finally:
             await page.close()
 
+    globals()["get_wos_detail_impl"] = get_wos_detail
+
     @mcp.tool()
     async def export_wos(
         format: str = "bibtex",
@@ -635,6 +637,8 @@ def register_wos_tools(mcp: FastMCP):
                 "error": f"导出失败: {e}",
                 "tip": "请确保已先运行 search_wos 并有搜索结果",
             }, ensure_ascii=False)
+
+    globals()["export_wos_impl"] = export_wos
 
     @mcp.tool()
     async def login_wos(ctx: Context = None) -> str:
